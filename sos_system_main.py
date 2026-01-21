@@ -1,7 +1,7 @@
 from microbit import *
 import radio
 import music
-from Radio_SOS import *
+from new_radio_sos import *
 
 #configure
 radio.config(channel=7, group=1, power=7) #highest power for better range
