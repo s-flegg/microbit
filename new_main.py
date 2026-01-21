@@ -7,7 +7,7 @@ from Radio_SOS import *
 radio.config(channel=7, group=1, power=7) #highest power for better range
 radio.on()
 set_volume(100)
-music.set_tempo(bpm=160)
+#music.set_tempo(bpm=160)
 
 #constant state values
 IDLE = 0
