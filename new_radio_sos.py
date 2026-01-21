@@ -5,7 +5,7 @@ import music
 
 IDLE = 0
 SENDING = 1
-RECEIVING = 2
+RESPONDING = 2
 
 
 def handle_radio(state, alert):
