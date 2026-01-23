@@ -1,76 +1,130 @@
 import serial
 
 class Communicate:
-    def __init__(self):
-        self.port = serial.Serial('COM7', 115200)
+    """Used for receiving data via uart.
 
-        self.received_header = False
-        self.received_chunks = False
-        self.last_chunk = -1 # must be -1 as read_message looks for last_chunk +1, and that needs to initially be 0
-        self.total_chunks = None
-        self.received_end = False
+    It is expecting the messages it receives to be strings containing dictionaries, that will always have the type key.
+    The other keys are defined by the type.
 
-        self.data = ""
+    Types:
+        0: Start of transmission. Will have the chunkCount key. \n
+        1: Data chunks. Will have the chunkID and data key. \n
+        2: End of transmission. Contains no additional keys. \n
+        3: End of all transmissions. Contains no additional keys.
 
-    def read_message(self):
-        """This function uses uart to read a transmission once.
+    Upon receiving a message it will send a "RECEIVED" transmission (for every message)
+    provided that they follow the expected start  of transmission, data chunks in order, end of transmission.
+    """
+    @staticmethod
+    def read_message(as_list=False, as_file=False, file_name=None):
+        """This function uses uart to read a transmission.
 
-        It will only read the transmission once.
-        It is expecting the messages it receives to be strings containing dictionaries, that will always have the type key.
-        The other keys are defined by the type.
-
-        Types:
-            0: Start of transmission. Will have the chunkCount key. \n
-            1: Data chunks. Will have the chunkID and data key. \n
-            2: End of transmission. Contains no additional keys.
-
-        Upon receiving a message it will send a "RECEIVED" transmission (for every message)
-        provided that they follow the expected start  of transmission, data chunks in order, end of transmission.
+        Transmissions must not include "|n". \n
+        One of as_list and as_file must be true. If as_file is true, file_name must be provided, 
+        and transmissions will be output to a file, with a newline for each.
+        
+        ARGS:
+            as_list (bool): indicates that all the transmissions should be outputted as a list of strings, 
+                            where each list item is one transmission.
+            as_file (bool): indicates that all the transmissions should be outputted to a file.
+            file_name (str or None): the filename of the output file, only required if as_file is True.
 
         Returns:
-            (str): The transmitted string.
+            (str or None): The transmitted string.
         """
-        while True:
-            message = self.port.readline().decode().strip()
+        
+        port = serial.Serial('COM7', 115200)
+        """The port used to receive data"""
+
+        received_header = False
+        """Indicates that the header/ type 0  message has been received.
+        :type: bool"""
+        received_chunks = False
+        """Indicates that all of the data chunks of type 1 have been received.
+        :type: bool"""
+        last_chunk = -1 # must be -1 as read_message looks for last_chunk +1, and that needs to initially be 0
+        """Holds the chunk_ID of the last received message, of type 1.
+        :type: int"""
+        total_chunks = -1
+        """The total amount of data chunks to be received in the current transmission.
+        :type: int"""
+        received_end = False
+        """Indicates that the end of the current transmission has been received.
+        :type: bool"""
+        terminated = False
+        """Indicates the end of all transmissions.
+        :type: bool"""
+
+        data = ""
+        """The currently being transmitted string.
+        :type: str"""
+        data_list = []
+        """The list of data strings to be output. Used by read_message only when as_list is true.
+        :type: list of str"""
+        
+        while not terminated:
+            message = port.readline().decode().strip().replace("|n", "\n") # replace is workaround for newline errors
 
             if not message: # guard clause, ensures there is a message to be read
                 continue
 
-            data = self.eval(message)
-            print(f"____DATA____: {data}")
+            data_dict = Communicate.eval(message)
 
-            if not self.received_header:
-                if data['type'] != 0: # guard clause, 0 indicates header
+            if not received_header:
+                if data_dict['type'] != 0: # guard clause, 0 indicates header
                     continue
 
-                self.total_chunks = data['chunkCount']
-                self.received_header = True
-                self.port.write("RECEIVED".encode())
+                total_chunks = data_dict['chunkCount']
+                received_header = True
+                port.write("RECEIVED".encode())
 
-            elif not self.received_chunks:
-                if data['type'] != 1: #guard clause, 1 indicates transmission chunks
+            elif not received_chunks:
+                if data_dict['type'] != 1: #guard clause, 1 indicates transmission chunks
                     continue
 
-                if data['chunkID'] != self.last_chunk + 1: # guard clause, checks it's the right data chunk
+                if data_dict['chunkID'] != last_chunk + 1: # guard clause, checks it's the right data chunk
                     continue
 
-                self.data += data['data']
-                self.last_chunk = data['chunkID']
-                self.port.write("RECEIVED".encode())
-                if self.last_chunk + 1 == self.total_chunks:
-                    self.received_chunks = True
+                data += data_dict['data']
+                last_chunk = data_dict['chunkID']
+                port.write("RECEIVED".encode())
+                if last_chunk + 1 == total_chunks:
+                    received_chunks = True
 
-            elif not self.received_end:
-                if data['type'] != 2: #guard clause, 2 indicates end, currently redundant but useful if more types added
+            elif not received_end:
+                if data_dict['type'] != 2: #guard clause, 2 indicates end of current transmission
                     continue
 
-                self.received_end = True
-                self.port.write("RECEIVED".encode())
-                break
+                if as_list:
+                    data_list.append(data)
+                elif as_file:
+                    with open(file_name, 'a') as f:
+                        f.write(data)
+                        f.write("\n")
 
-        return self.data
+                received_end = True
+                port.write("RECEIVED".encode())
+                continue
 
-    def eval(self, item):
+            else: # one transmission has ended
+
+                if data_dict['type'] == 3: # indicates end of all transmissions
+                    terminated = True
+                    port.write("RECEIVED".encode())
+                    break
+                elif data_dict['type'] == 0: # indicates start of new transmission
+                    data = ""
+                    received_header = False
+                    received_chunks = False
+                    last_chunk = -1  # must be -1 as read_message looks for last_chunk +1, and that needs to initially be 0
+                    total_chunks = -1
+                    received_end = False
+
+        if as_list:
+            return data_list
+
+    @staticmethod
+    def eval(item):
         """Converts a dict as str into a python dict
 
         Assumes the str is a dict, does not handle errors.
@@ -144,6 +198,7 @@ class Communicate:
 
 if __name__ == "__main__":
     a = Communicate()
-    print(a.read_message())
+    print(a.read_message(False, True, 'test.txt'))
+    # print(a.read_message(True))
     # print(a.eval("""{'test': '123', 'sbc': "8, 6, \n12", 'abc': 4.2, 'bef': {'a': 2}}"""))
     # print(a.eval(" {'type': 0, 'chunkCount': 7}"))
