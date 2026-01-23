@@ -31,12 +31,13 @@ class Communicate:
             (str): The transmitted string.
         """
         while True:
-            message = self.port.readline().decode()
+            message = self.port.readline().decode().strip()
 
             if not message: # guard clause, ensures there is a message to be read
                 continue
 
             data = self.eval(message)
+            print(f"____DATA____: {data}")
 
             if not self.received_header:
                 if data['type'] != 0: # guard clause, 0 indicates header
@@ -46,7 +47,7 @@ class Communicate:
                 self.received_header = True
                 self.port.write("RECEIVED".encode())
 
-            if not self.received_chunks:
+            elif not self.received_chunks:
                 if data['type'] != 1: #guard clause, 1 indicates transmission chunks
                     continue
 
@@ -66,8 +67,6 @@ class Communicate:
                 self.received_end = True
                 self.port.write("RECEIVED".encode())
                 break
-
-            print(data)
 
         return self.data
 
@@ -92,9 +91,7 @@ class Communicate:
         double_quote_open = False
         curly_braces_open_count = 0 # excludes original that surrounded the main dict
 
-        print(item)
         def add_kv_pair(stored):
-            print(f"'{stored}' has len {len(stored)}")
             if stored[0] != "'" and stored[0] != '"' and stored[0] != "{":
                 if "." not in stored:
                     stored = int(stored)
@@ -134,10 +131,9 @@ class Communicate:
                 i += 2 # skip the following whitespace
                 continue
 
+
             stored += c
             i += 1
-
-        print(i)
 
         # checks for case where final value doesn't end with ,
         if key not in new_dict:

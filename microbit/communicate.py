@@ -27,7 +27,7 @@ class Communicate:
         As such "RECEIVED" should only be sent if the message follows the expected order.
 
         ARGS:
-            data (str or None): The data to be sent, of undetermined length.
+            data (str or None): The data to be sent, of undetermined length. Must not contain newline characters.
             filename (str or None): The name of the file to be sent.
         """
         # split data into chunks as max len for uart transmission is 128 characters
@@ -47,7 +47,7 @@ class Communicate:
         self._send_with_verify("{" + "'type': 0, 'chunkCount': {}".format(str(len(data_chunks))) + "}\n")
 
         # chunks
-        for i in range(1, len(data_chunks)):
+        for i in range(len(data_chunks)):
             message = str(
                 "{" + "'type': 1, 'chunkID': {chunkID}, 'data': '{data}'".format(chunkID=i, data=data_chunks[i]) + "}\n"
             )
