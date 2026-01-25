@@ -13,6 +13,7 @@ set_volume(100)
 IDLE = 0
 SENDING = 1
 RESPONDING = 2
+HELP_COMING = 3
 
 #initialise
 state = IDLE
