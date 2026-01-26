@@ -1,6 +1,8 @@
 from microbit import *
 import radio
 import music
+import machine
+from acceleration_pc import *
 from new_radio_sos import *
 
 #configure
@@ -13,12 +15,14 @@ set_volume(100)
 IDLE = 0
 SENDING = 1
 RESPONDING = 2
-HELP_COMING = 3
 
 #initialise
 state = IDLE
 alert = False
 
+#Get unique microbit id
+unique_bytes = machine.unique_id()
+skier_id = int.from_bytes(unique_bytes, 'little') % 256  #converts bytes object into integer
 
 while True:
     
@@ -31,16 +35,8 @@ while True:
                 alert = True
                 
     
-    #Handle radio events + updating state and alert
-    state, alert = handle_radio(state, alert)
+    #Handle accelerometer and radio events
+    state, alert = accelerometerDetect(skier_id, state, alert)
     
-    #Play alert if needed
-    sound(alert)
-    
-    sleep(300)
-
-    
-    
-
-
-
+    #Sleep a short time between
+    sleep(500)
