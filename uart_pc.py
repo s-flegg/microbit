@@ -1,8 +1,10 @@
 """Import the Communicate class to read uart messages.
 
 It is designed to be used alongside the uart_microbit file."""
+from time import sleep
 
 import serial
+import threading
 
 class Communicate:
     """Used for receiving data via uart.
@@ -23,17 +25,41 @@ class Communicate:
     Upon receiving a message it will send a "RECEIVED" transmission (for every message)
     provided that they follow the expected start  of transmission, data chunks in order, end of transmission.
     """
-    @staticmethod
-    def read_message(com_port, as_list=False, as_file=False, file_name=None):
+    def __init__(self, port):
+        """
+        ARGS:
+            port (str): the usb port to read date from. Onn linux this is '/dev/ttyACM0',
+            on windows it will be something like COM7.
+        """
+        self.port = serial.Serial(port, 115200)
+        """The port used to receive data"""
+        self.last_message = None
+        """Holds the last unprocessed message received by read_message
+        :type: str or None"""
+
+        self.terminated = False
+        """Used by read_messages. Indicates the end of all transmissions.
+        :type: bool"""
+
+
+        self.send_received_message = False
+        """Used to repeatedly send a received message until set to False
+        :type: bool"""
+        self.data_list = []
+        """The list of data strings to be returned. Used by read_message only when as_list is true.
+        :type: list of str"""
+
+
+    def _message_logic(self, as_list=False, as_file=False, file_name=None):
         """This function uses uart to read a transmission.
 
         Transmissions must not include "|n". \n
         One of as_list and as_file must be true. If as_file is true, file_name must be provided, 
         and transmissions will be output to a file, with a newline for each.
+
+        This function is designed to be threaded by a public function.
         
         ARGS:
-            com_port (str): the usb port to read date from. Onn linux this is '/dev/ttyACM0',
-            on windows it will be something like COM7.
             as_list (bool): indicates that all the transmissions should be outputted as a list of strings, 
                             where each list item is one transmission.
             as_file (bool): indicates that all the transmissions should be outputted to a file.
@@ -42,9 +68,6 @@ class Communicate:
         Returns:
             (str or None): The transmitted string.
         """
-        
-        port = serial.Serial(com_port, 115200)
-        """The port used to receive data"""
 
         received_header = False
         received_chunks = False
@@ -55,24 +78,27 @@ class Communicate:
         """The total amount of data chunks to be received in the current transmission.
         :type: int"""
         received_end = False
-        terminated = False
-        """Indicates the end of all transmissions.
-        :type: bool"""
 
         data = ""
         """The currently being transmitted string.
         :type: str"""
-        data_list = []
-        """The list of data strings to be output. Used by read_message only when as_list is true.
-        :type: list of str"""
-        
-        while not terminated:
-            message = port.readline().decode().strip().replace("|n", "\n") # replace is workaround for newline errors
+
+        while not self.terminated:
+            message = self.port.readline().decode().strip().replace("|n", "\n") # replace is workaround for newline errors
+            # ensures RECEIVED message stops being sent when new message is received
+            if message != self.last_message: # due to types and chunkID each message will always be unique, even if data isn't.
+                self.send_received_message = False
+                self.last_message = message
 
             if not message: # guard clause, ensures there is a message to be read
                 continue
 
             data_dict = Communicate._eval(message)
+
+            if data_dict['type'] == 3:  # indicates end of all transmissions, must always be checked
+                self.terminated = True
+                self.send_received_message = True
+                break
 
             if not received_header:
                 if data_dict['type'] != 0: # guard clause, 0 indicates header
@@ -80,7 +106,7 @@ class Communicate:
 
                 total_chunks = data_dict['chunkCount']
                 received_header = True
-                port.write("RECEIVED".encode())
+                self.send_received_message = True
 
             elif not received_chunks:
                 if data_dict['type'] != 1: #guard clause, 1 indicates transmission chunks
@@ -91,7 +117,7 @@ class Communicate:
 
                 data += data_dict['data']
                 last_chunk = data_dict['chunkID']
-                port.write("RECEIVED".encode())
+                self.send_received_message = True
                 if last_chunk + 1 == total_chunks:
                     received_chunks = True
 
@@ -100,23 +126,18 @@ class Communicate:
                     continue
 
                 if as_list:
-                    data_list.append(data)
+                    self.data_list.append(data)
                 elif as_file:
                     with open(file_name, 'a') as f:
                         f.write(data)
                         f.write("\n")
 
                 received_end = True
-                port.write("RECEIVED".encode())
+                self.send_received_message = True
                 continue
 
             else: # one transmission has ended
-
-                if data_dict['type'] == 3: # indicates end of all transmissions
-                    terminated = True
-                    port.write("RECEIVED".encode())
-                    break
-                elif data_dict['type'] == 0: # indicates start of new transmission
+                if data_dict['type'] == 0: # indicates start of new transmission
                     data = ""
                     received_header = False
                     received_chunks = False
@@ -124,8 +145,6 @@ class Communicate:
                     total_chunks = -1
                     received_end = False
 
-        if as_list:
-            return data_list
 
     @staticmethod
     def _eval(item):
@@ -198,4 +217,41 @@ class Communicate:
             add_kv_pair(stored)
 
         return new_dict
+
+    def read_message(self, as_list=False, as_file=False, file_name=None):
+        """This function uses uart to read a transmission.
+
+        Transmissions must not include "|n". \n
+        One of as_list and as_file must be true. If as_file is true, file_name must be provided,
+        and transmissions will be output to a file, with a newline for each.
+
+        ARGS:
+            as_list (bool): indicates that all the transmissions should be outputted as a list of strings,
+                            where each list item is one transmission.
+            as_file (bool): indicates that all the transmissions should be outputted to a file.
+            file_name (str or None): the filename of the output file, only required if as_file is True.
+
+        Returns:
+            (str or bool): The transmitted string if as_list, or True when the file is finished if as_file.
+        """
+        # This function is a wrapper for the _message_logic and _send_received_message functions
+        # allowing them to be threaded together
+        t1 = threading.Thread(target=self._message_logic, args=[as_list, as_file, file_name])
+        t2 = threading.Thread(target=self._send_received_message)
+        t1.start()
+        t2.start()
+
+        while True: # keep checking thread
+            if not t1.is_alive(): # then transmissions have ended
+                if as_list:
+                    return self.data_list
+                else:
+                    return True
+
+    def _send_received_message(self):
+        """Used with the self.send_received_message attribute and threading to repeatedly send a RECEIVED message."""
+        while not self.terminated: # for threading
+            if self.send_received_message:
+                self.port.write("RECEIVED".encode())
+                sleep(1) # doesn't work without this, likely some weird threading thing
 
