@@ -24,7 +24,7 @@ class Communicate:
     provided that they follow the expected start  of transmission, data chunks in order, end of transmission.
     """
     @staticmethod
-    def read_message(as_list=False, as_file=False, file_name=None):
+    def read_message(com_port, as_list=False, as_file=False, file_name=None):
         """This function uses uart to read a transmission.
 
         Transmissions must not include "|n". \n
@@ -32,6 +32,8 @@ class Communicate:
         and transmissions will be output to a file, with a newline for each.
         
         ARGS:
+            com_port (str): the usb port to read date from. Onn linux this is '/dev/ttyACM0',
+            on windows it will be something like COM7.
             as_list (bool): indicates that all the transmissions should be outputted as a list of strings, 
                             where each list item is one transmission.
             as_file (bool): indicates that all the transmissions should be outputted to a file.
@@ -41,7 +43,7 @@ class Communicate:
             (str or None): The transmitted string.
         """
         
-        port = serial.Serial('COM7', 115200)
+        port = serial.Serial(com_port, 115200)
         """The port used to receive data"""
 
         received_header = False
