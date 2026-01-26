@@ -1,12 +1,9 @@
 from microbit import *
 import radio
 import music
-#from bme688 import *
-#from OLED import *
-from Radio_SOS import *
 import time
-#import datetime
-
+from Radio_SOS import *
+from data_warning import *
 
 #configure
 radio.config(channel=7, group=1, power=7) #highest power for better range
