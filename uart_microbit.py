@@ -11,7 +11,8 @@ class Communicate:
     Use the send function to send transmissions.
 
     If this object is initialised with run_once set to false,
-    the terminate function will need to be used to indicate the end of all transmissions.
+    either the terminate function will need to be used to indicate the end of all transmissions,
+    or the button_terminate function needs to be run to indicate the end of all transmissions via a button press.
 
     --------------------- Sent Message Format -------------------
 
@@ -93,6 +94,11 @@ class Communicate:
     def terminate(self):
         """Send the end message indicating that all transmissions are complete."""
         self._send_with_verify("{'type': 3}\n")
+
+    def button_terminate(self):
+        """Checks if Button A is pressed and terminates the uart connection if it was."""
+        if button_a.was_pressed():
+            self.terminate()
 
     def _send_with_verify(self, data):
         """Private function to send data as provided.
