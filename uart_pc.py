@@ -1,10 +1,8 @@
 """Import the Communicate class to read uart messages.
 
 It is designed to be used alongside the uart_microbit file."""
-from time import sleep
 
 import serial
-import threading
 
 class Communicate:
     """Used for receiving data via uart.
@@ -50,7 +48,7 @@ class Communicate:
         :type: list of str"""
 
 
-    def _message_logic(self, as_list=False, as_file=False, file_name=None):
+    def read_message(self, as_list=False, as_file=False, file_name=None):
         """This function uses uart to read a transmission.
 
         Transmissions must not include "|n". \n
@@ -85,10 +83,6 @@ class Communicate:
 
         while not self.terminated:
             message = self.port.readline().decode().strip().replace("|n", "\n") # replace is workaround for newline errors
-            # ensures RECEIVED message stops being sent when new message is received
-            if message != self.last_message: # due to types and chunkID each message will always be unique, even if data isn't.
-                self.send_received_message = False
-                self.last_message = message
 
             if not message: # guard clause, ensures there is a message to be read
                 continue
@@ -97,7 +91,7 @@ class Communicate:
 
             if data_dict['type'] == 3:  # indicates end of all transmissions, must always be checked
                 self.terminated = True
-                self.send_received_message = True
+                self.port.write("RECEIVED".encode())
                 break
 
             if not received_header:
@@ -106,7 +100,7 @@ class Communicate:
 
                 total_chunks = data_dict['chunkCount']
                 received_header = True
-                self.send_received_message = True
+                self.port.write("RECEIVED".encode())
 
             elif not received_chunks:
                 if data_dict['type'] != 1: #guard clause, 1 indicates transmission chunks
@@ -117,7 +111,7 @@ class Communicate:
 
                 data += data_dict['data']
                 last_chunk = data_dict['chunkID']
-                self.send_received_message = True
+                self.port.write("RECEIVED".encode())
                 if last_chunk + 1 == total_chunks:
                     received_chunks = True
 
@@ -133,7 +127,7 @@ class Communicate:
                         f.write("\n")
 
                 received_end = True
-                self.send_received_message = True
+                self.port.write("RECEIVED".encode())
                 continue
 
             else: # one transmission has ended
@@ -217,41 +211,3 @@ class Communicate:
             add_kv_pair(stored)
 
         return new_dict
-
-    def read_message(self, as_list=False, as_file=False, file_name=None):
-        """This function uses uart to read a transmission.
-
-        Transmissions must not include "|n". \n
-        One of as_list and as_file must be true. If as_file is true, file_name must be provided,
-        and transmissions will be output to a file, with a newline for each.
-
-        ARGS:
-            as_list (bool): indicates that all the transmissions should be outputted as a list of strings,
-                            where each list item is one transmission.
-            as_file (bool): indicates that all the transmissions should be outputted to a file.
-            file_name (str or None): the filename of the output file, only required if as_file is True.
-
-        Returns:
-            (str or bool): The transmitted string if as_list, or True when the file is finished if as_file.
-        """
-        # This function is a wrapper for the _message_logic and _send_received_message functions
-        # allowing them to be threaded together
-        t1 = threading.Thread(target=self._message_logic, args=[as_list, as_file, file_name])
-        t2 = threading.Thread(target=self._send_received_message)
-        t1.start()
-        t2.start()
-
-        while True: # keep checking thread
-            if not t1.is_alive(): # then transmissions have ended
-                if as_list:
-                    return self.data_list
-                else:
-                    return True
-
-    def _send_received_message(self):
-        """Used with the self.send_received_message attribute and threading to repeatedly send a RECEIVED message."""
-        while not self.terminated: # for threading
-            if self.send_received_message:
-                self.port.write("RECEIVED".encode())
-                sleep(1) # doesn't work without this, likely some weird threading thing
-
