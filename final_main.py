@@ -4,6 +4,7 @@ import music
 import time
 from Radio_SOS import *
 from data_warning import *
+from acceleration.py import *
 
 #configure
 radio.config(channel=7, group=1, power=7) #highest power for better range
@@ -16,7 +17,6 @@ IDLE = 0
 SENDING = 1
 RESPONDING = 2
 HELP_COMING = 3
-READ_ACCEL = 4
 
 #initialise
 state = IDLE
@@ -47,12 +47,11 @@ while True:
     sound(alert)
     
     
-    #if state == IDLE or state == READ_ACCEL:
+    if state == IDLE:
         
-        #check for button a press
-            #state = read_accel
+        #acceleration readings
+        state, alert = accelerometerDetect(skier_id, state, alert)
         
-            #acceleration readings
             #add to messages
             #messages += ID + ", accel, " + str(datetime.datetime.now()) + ", None, " + str(session_ID) + ", " + str(accel) + "\n"
             
