@@ -3,89 +3,78 @@ import matplotlib.pyplot as plt
 
 columns = [
     "SkierID",
+    "Type",
     "Time",
-    "Temperature",
-    "CO2",
-    "Elapsed_Time",
-    "Acceleration/g_force",
+    "Level",
+    "Warning",
     "SessionID",
-    "Warning"
+    "Acceleration",
 ]
 
 df = pd.read_csv("dummy.csv", names=columns)
-df.drop_duplicates()
 # print(df)
 
-# DATAFRAME FOR ACCELERATION
-
-# dummy conversions and parsing
+# ACCELERATION
 df["SkierID"] = df["SkierID"].astype(str).str.strip()
-df["Time"] = df["Time"].astype(str).str.strip()
+df["Type"] = df["Type"].astype(str).str.strip()
+df["Time"] = pd.to_numeric(df["Time"], errors="coerce")
 df["SessionID"] = pd.to_numeric(df["SessionID"], errors="coerce")
-df["Acceleration/g_force"] = pd.to_numeric(
-    df["Acceleration/g_force"], errors="coerce")
-df["Time"] = pd.to_datetime(df["Time"], errors="coerce")
-df["Elapsed_Time"] = df["Elapsed_Time"].astype(str).str.strip()
-df["Elapsed_Time"] = pd.to_datetime(df["Elapsed_Time"], errors="coerce")
-
-df = df.dropna(subset=["SkierID", "SessionID", "Time", "Acceleration/g_force"])
+df["Acceleration"] = pd.to_numeric(df["Acceleration"], errors="coerce")
+df = df.dropna(subset=["SkierID", "SessionID", "Time", "Acceleration"])
+df = df[df["Type"] == "accel"]
 df = df.sort_values(["SkierID", "SessionID", "Time"])
-df["dt"] = df.groupby(["SkierID", "SessionID"])["Elapsed_Time"].diff().fillna(0)
-df["speed"] = df.groupby(["SkierID", "SessionID"]).apply(
-    lambda g: (g["Acceleration/g_force"] * g["dt"]).cumsum()
-).reset_index(level=[0, 1], drop=True)
+df["dt"] = df.groupby(["SkierID", "SessionID"])["Time"].diff().fillna(0)
+df["speed"] = (
+    df["Acceleration"] * df["dt"]
+).groupby([df["SkierID"], df["SessionID"]]).cumsum()
 
 plt.figure()
 for (skier, session), g in df.groupby(["SkierID", "SessionID"]):
-    plt.plot(g["Elapsed_Time"], g["speed"], marker="o",
-    label=f"{skier} Session {int(session)}")
+    plt.plot(g["Time"], g["speed"], marker="o",
+             label=f"{skier} Session {int(session)}")
 
-# Elapsed time
-plt.xlabel("Time in session (seconds)")
-
-# time x accel
-plt.ylabel("Speed (from integrating acceleration)")
+plt.xlabel("Elapsed time in session (seconds)")
+plt.ylabel("Speed (m/s)")
 plt.title("Speed over time for each session")
 plt.legend()
 plt.show()
 
-# DATAFRAME FOR WARNINGS
-
 # CO2
-co2_warnings = df[df["Warning"] == "CO2"]
-
-plt.figure()
-plt.scatter(
-co2_warnings["Time"],
-co2_warnings["CO2"],
-color="red",
-label="Dangerous CO2 Event")
-
-plt.axhline(y=1500, color="orange", linestyle="--", label="Danger Threshold")
-plt.xlabel("Time")
-plt.ylabel("CO2 Level (ppm)")
-plt.title("Dangerous CO2 Levels Detected Over Time")
-plt.legend()
-plt.grid(True)
-# plt.show()
-
-# TEMP
-temp_warnings = df[df["Warning"] == "TEMP"]
+# co2_warnings = df[df["Warning"] == "CO2"]
+co2_levels = df[df["Type"] == "CO2"]
 
 plt.figure(figsize=(10, 5))
 plt.scatter(
-    temp_warnings["Time"],
-    temp_warnings["Temperature"],
+    co2_levels["Time"],
+    co2_levels["CO2"],
+    color="red",
+    label="CO2 Events")
+plt.axhline(y=1500, color="orange", linestyle="--", label="Danger Threshold")
+plt.xlabel("Time")
+plt.ylabel("CO2 Level (ppm)")
+plt.title("CO2 Levels Detected Over Time")
+plt.legend()
+plt.grid(True)
+# plt.show()
+# ^ works
+
+# TEMP
+# maybe integrate temp and co2 together?
+temp_warnings = df[df["Warning"] == "TEMP"]
+temp_levels = df[df["Type"] == "TEMP"]
+
+plt.figure(figsize=(10, 5))
+plt.scatter(
+    temp_levels["Time"],
+    temp_levels["Temperature"],
     color="blue",
-    label="Temperature Warning"
+    label="Temperature Levels"
 )
-
 plt.axhline(y=-10, color="red", linestyle="--", label="Danger Threshold")
-
 plt.xlabel("Time")
 plt.ylabel("Temperature (°C)")
 plt.title("Dangerous Temperature Events Over Time")
 plt.legend()
 plt.grid(True)
-
 # plt.show()
+# ^ works
