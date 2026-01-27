@@ -4,8 +4,8 @@ from bme688 import *
 from OLED import *
 
 # Threshold values
-CO2_THRESHOLD = 1500          # ppm
-TEMP_THRESHOLD = -10          # °C (dangerous cold for skiing)
+CO2_THRESHOLD = 1500          # ppm 1500
+TEMP_THRESHOLD = -10         # °C (dangerous cold for skiing)
 READ_INTERVAL = 60000         # 1 minute
 
 # Initialise sensor
@@ -28,6 +28,21 @@ def environment_monitor(skier_id=1):
     show("CO2: {}ppm".format(eCO2), 0)
     show("TEMP: {}C".format(int(temperature)), 2)
 
+   # Temperature warning
+    if temperature <= TEMP_THRESHOLD:
+        display.show(Image.XMAS)
+
+        # Temperature warning sound
+        music.play([
+            'E4:2', 'C4:2',
+            'E4:2', 'C4:2'
+        ])
+        
+        temp_status = "Danger"
+
+    else:
+        temp_status = "Safe"
+
     # CO2 warning
     if eCO2 >= CO2_THRESHOLD:
         display.show(Image.SKULL)
@@ -38,35 +53,17 @@ def environment_monitor(skier_id=1):
             'R:1',
             'C4:2'
         ])
-
-        return {
-            "skier_id": skier_id,
-            "time": current_time,
-            "co2": eCO2,
-            "temperature": temperature,
-            "warning": "CO2"
-        }
-
-    # Temperature warning
-    if temperature <= TEMP_THRESHOLD:
-        display.show(Image.XMAS)
-
-        # Temperature warning sound
-        music.play([
-            'E4:2', 'C4:2',
-            'E4:2', 'C4:2'
-        ])
-
-        return {
-            "skier_id": skier_id,
-            "time": current_time,
-            "co2": eCO2,
-            "temperature": temperature,
-            "warning": "TEMP"
-        }
-
-    # Safe conditions
+        co2_status = "Danger"    
+    else:
+        co2_status = "Safe"
+    
     display.show(Image.YES)
-    return None
+    
+    return(
+    (skier_id,"TEMP", current_time, temperature,None,None,temp_status),
+    (skier_id,"CO2", current_time, eCO2,None,None,co2_status))
 
-environment_monitor()
+
+        
+    #(id,mtype,time,level,sessionid,accel, warning)
+
