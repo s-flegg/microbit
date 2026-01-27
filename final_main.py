@@ -21,7 +21,7 @@ HELP_COMING = 3
 #initialise
 state = IDLE
 alert = False
-message_ID = 0
+#message_ID = 0
 
 
 
@@ -35,7 +35,8 @@ while True:
     #Start sending SOS
     if state == IDLE and button_b.was_pressed():
                 #add to messages
-                #messages += ID + ", sos, " + str(datetime.datetime.now()) + ", None, None, None\n"
+                csv_line = "{},{},{:.2f},{},{},{},{:.2f},{:.2f}".format(skier_id,"sos",datetime.datetime.now(),None,None,None,None,None)
+                messages += csv_line + "\n"
                 state = SENDING
                 alert = True
                 
@@ -50,18 +51,14 @@ while True:
     if state == IDLE:
         
         #acceleration readings
-        state, alert = accelerometerDetect(skier_id, state, alert)
-        
-            #add to messages
-            #messages += ID + ", accel, " + str(datetime.datetime.now()) + ", None, " + str(session_ID) + ", " + str(accel) + "\n"
-            
-        
+        state, alert, csv_line = accelerometerDetect(skier_id, state, alert)
+        messages += csv_line + "\n"
+
+    
         #check co2 and temp
+        csv_line_1, csv_line_1 = environment_monitor()
+        messages += csv_line_1 + "\n" + csv_line_2 + "\n"
         
-        
-    
-    
-    
     
     
     #send all messages to be sent
