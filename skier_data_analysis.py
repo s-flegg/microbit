@@ -54,7 +54,7 @@ plt.show()
 # CO2
 co2_warnings = df[df["Warning"] == "CO2"]
 
-plt.figure() # figsize=(10, 5)
+plt.figure()
 plt.scatter(
 co2_warnings["Time"],
 co2_warnings["CO2"],
