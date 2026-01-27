@@ -31,39 +31,22 @@ def environment_monitor(skier_id=1):
    # Temperature warning
     if temperature <= TEMP_THRESHOLD:
         display.show(Image.XMAS)
-
         # Temperature warning sound
-        music.play([
-            'E4:2', 'C4:2',
-            'E4:2', 'C4:2'
-        ])
-        
+        music.play(['E4:2', 'C4:2','E4:2', 'C4:2'])
         temp_status = "Danger"
-
     else:
         temp_status = "Safe"
 
     # CO2 warning
     if eCO2 >= CO2_THRESHOLD:
         display.show(Image.SKULL)
-
         # CO2 warning sound (not SOS)
-        music.play([
-            'C4:2', 'C4:2', 'C4:2',
-            'R:1',
-            'C4:2'
-        ])
+        music.play(['C4:2', 'C4:2', 'C4:2','R:1','C4:2'])
         co2_status = "Danger"    
     else:
         co2_status = "Safe"
-    
     display.show(Image.YES)
     
     return(
     (skier_id,"TEMP", current_time, temperature,None,None,temp_status),
     (skier_id,"CO2", current_time, eCO2,None,None,co2_status))
-
-
-        
-    #(id,mtype,time,level,sessionid,accel, warning)
-
