@@ -11,7 +11,8 @@ class Communicate:
     Use the send function to send transmissions.
 
     If this object is initialised with run_once set to false,
-    the terminate function will need to be used to indicate the end of all transmissions.
+    either the terminate function will need to be used to indicate the end of all transmissions,
+    or the button_terminate function needs to be run to indicate the end of all transmissions via a button press.
 
     --------------------- Sent Message Format -------------------
 
@@ -27,13 +28,15 @@ class Communicate:
     After all messages a response "RECEIVED" is expected. If not received within 5 seconds the message will be resent.
     As such "RECEIVED" should only be sent if the message follows the expected order.
     """
-    def __init__(self, run_once):
+    def __init__(self, run_once, button_terminate):
         """Initialises the Communicate class
 
         ARGS:
             run_once (bool): This dictates whether the send function will only perform one full data transfer,
                             or if it will transfer data each time it is called. If False, you will need to use the
                             terminate function once all transmissions are done.
+            button_terminate (bool): If True, this will allow transmissions to be stopped by pressing the A button.
+                                    If False the terminate function must be used.
         """
         uart.init(baudrate=115200)
         self.run_once = run_once
@@ -41,6 +44,10 @@ class Communicate:
         :type: bool"""
         self.complete = False
         """Used when only one transmission is set to be done, this indicates that the transmission has happened.
+        :type: bool"""
+
+        self.button_terminate = button_terminate
+        """If True, check for button presses to terminate transmissions
         :type: bool"""
 
     def send(self, data):
@@ -94,6 +101,14 @@ class Communicate:
         """Send the end message indicating that all transmissions are complete."""
         self._send_with_verify("{'type': 3}\n")
 
+    def _button_terminate(self):
+        """Checks if Button A is pressed and terminates the uart connection if it was.
+
+
+        This function should be run in a loop."""
+        if button_a.was_pressed():
+            self.terminate()
+
     def _send_with_verify(self, data):
         """Private function to send data as provided.
 
@@ -113,3 +128,6 @@ class Communicate:
             if received: # ensures there is a message to run decode on, preventing errors
                 if received.decode() == "RECEIVED":
                     break
+
+            # handle button presses
+            self._button_terminate() # must be in this loop otherwise this loop can prevent this ever running
