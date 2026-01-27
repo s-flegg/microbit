@@ -48,5 +48,5 @@ def environment_monitor(skier_id=1):
     display.show(Image.YES)
     
     return(
-    (skier_id,"TEMP", current_time, temperature, temp_status, None, None, None),
-    (skier_id,"CO2", current_time, eCO2, co2_status, None, None, None))
+    (skier_id,"TEMP", current_time, temperature, temp_status, None, None),
+    (skier_id,"CO2", current_time, eCO2, co2_status, None, None))
