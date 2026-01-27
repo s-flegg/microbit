@@ -50,10 +50,10 @@ def accelerometerDetect(skier_id, state, alert):
         # Calculate acceleration
         g_force = accelerometer.get_strength() / 1000
         elapsed_time = (running_time() - session["start_time"]) / 1000  # seconds
+        acceleration_mps2 = g_force * 9.80665
 
         # CSV format for radio
-        csv_line = "{},{},{:.2f},{:.2f}".format(skier_id, session["id"], elapsed_time, g_force)
-        radio.send(csv_line)  # send CSV line over radio
+        csv_line = "{},{},{:.2f},{},{},{},{:.2f}".format(skier_id, "accel", elapsed_time, None, None, session["id"], acceleration_mps2)
         
         # SOS alert if g_force > 8
         if g_force > 8 and state != SENDING:
@@ -63,8 +63,8 @@ def accelerometerDetect(skier_id, state, alert):
 
     # Handle SOS radio events and update alert
     state, alert = handle_radio(state, alert)
-    
-    sound(alert)
+
 
     # Return updated state and alert
-    return state, alert
+    return state, alert, csv_line
+
