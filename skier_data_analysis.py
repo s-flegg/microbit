@@ -60,11 +60,11 @@ def plot_file(x):
     plt.legend()
     plt.grid(True)
     # plt.show()
-    # ^ works
+    # ^ should work, need to test with actual input
 
     # TEMP
     # maybe integrate temp and co2 together?
-    temp_warnings = df[df["Warning"] == "TEMP"]
+    # temp_warnings = df[df["Warning"] == "TEMP"]
     temp_levels = df[df["Type"] == "TEMP"]
 
     plt.figure(figsize=(10, 5))
@@ -81,14 +81,18 @@ def plot_file(x):
     plt.legend()
     plt.grid(True)
     # plt.show()
-    # ^ works
+    # ^ should work, need to test with actual input
 
 
 while True:
     try:
         character_list = []
+
+        # Prompt user for file where csv info was stored
         skier_data = input("Enter file name: ").replace(
-            " ", "").strip().lower()
+            " ", "").lower()
+
+        # File extention will be added or changed to .csv
         for i in skier_data:
             if i == ".":
                 break
