@@ -38,7 +38,7 @@ while True:
     #Start sending SOS
     if state == IDLE and button_b.was_pressed():
                 #add to messages
-                csv_line = "{},{},{},{},{},{},{},{}".format(skier_id,"sos",None,None,None,None,None,None)
+                csv_line = "{},{},{:.2f},{},{},{},{:.2f},{:.2f}".format(skier_id,"sos",time.gmtime(),None,None,None,None)
                 messages += csv_line + "\n"
                 state = SENDING
                 alert = True
