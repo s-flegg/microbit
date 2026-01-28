@@ -76,7 +76,7 @@ def establish_baselines():
 		read_data_registers()
 		tempTotal += REG_Temp
 		gasResTotal += calc_gas_resistance()
-		sleep(5000)
+		sleep(100)
 		print("Progress {}/60".format(i))
 	gasBase, tempBase, baseLinesSet = math.trunc(gasResTotal / 60), math.trunc(tempTotal / 60), True
 def read_data_registers():
