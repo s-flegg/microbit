@@ -5,7 +5,6 @@ import sys
 
 def plot_file(x):
 
-    # Need to put it all in a function
     columns = [
         "SkierID",
         "Type",
@@ -16,9 +15,7 @@ def plot_file(x):
         "Acceleration",
     ]
 
-    # enter user file
     df = pd.read_csv(x, names=columns)
-    # print(df)
 
     # ACCELERATION
     df["SkierID"] = df["SkierID"].astype(str).str.strip()
