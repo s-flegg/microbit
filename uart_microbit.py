@@ -3,7 +3,7 @@
 It is designed to be used alongside the uart_pc file."""
 
 from time import sleep
-from microbit import *
+from microbit import uart, button_a
 
 class Communicate:
     """Used for sending data via uart.
@@ -122,7 +122,7 @@ class Communicate:
         """
         while True:
             uart.write(data)
-            sleep(50)
+            sleep(100)
 
             received = uart.read()
             if received: # ensures there is a message to run decode on, preventing errors

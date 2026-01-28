@@ -19,12 +19,8 @@ while True:
         uart.send("SkierID, Type, Time, Level, Warning, SessionID, Acceleration, GForce")
         header_sent = True
 
-
     message = radio.receive()
 
     if message and check_message_format(message):
-        # Debug to show when message is received
-        display.show("R") # useful to see that radio is functioning
-
         uart.send(message)
 
