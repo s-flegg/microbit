@@ -1,0 +1,18 @@
+SkierID, Type, Time, Level, SessionID, Acceleration, Warning
+165,TEMP,2306,25.0,None,None,S
+165,CO2,2306,446,None,None,S
+165,TEMP,2306,25.0,None,None,S
+165,CO2,2306,446,None,None,S
+165,TEMP,2307,25.01,None,None,S
+165,CO2,2307,447,None,None,S
+165,TEMP,2307,25.01,None,None,S
+165,CO2,2307,447,None,None,S
+165,TEMP,2308,25.01,None,None,S
+165,CO2,2308,447,None,None,S
+165,TEMP,2308,25.0,None,None,S
+165,CO2,2308,446,None,None,S
+165,TEMP,2308,25.0,None,None,S
+165,CO2,2308,446,None,None,S
+165,TEMP,2309,24.99,None,None,S
+165,CO2,2309,446,None,None,S
+165,TEMP,2309,24.99,None,None,S
