@@ -122,7 +122,7 @@ class Communicate:
         """
         while True:
             uart.write(data)
-            sleep(50)
+            sleep(100)
 
             received = uart.read()
             if received: # ensures there is a message to run decode on, preventing errors

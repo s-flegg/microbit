@@ -212,6 +212,3 @@ class Communicate:
 
         return new_dict
 
-if __name__ == "__main__":
-    a = Communicate('COM7')
-    a.read_message(False,True, "data.txt")
