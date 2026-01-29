@@ -38,7 +38,8 @@ def clean(df):
     df.loc[df["Warning"].str.upper().isin(
         ["NONE", "NAN", "", "N"]), "Warning"] = pd.NA
     df = df.dropna(subset=["SkierID", "Type", "Time"])
-    return df.to_string()
+    print(df)
+    return df
 
 
 def acceleration(df):
@@ -48,6 +49,7 @@ def acceleration(df):
     adf = adf.dropna(subset=["SessionID", "Acceleration"])
     adf = adf.sort_values(["SkierID", "SessionID", "Time"])
     adf["dt"] = adf.groupby(["SkierID", "SessionID"])["Time"].diff().fillna(0)
+
     adf["dt"] = pd.to_numeric(adf["dt"], errors="coerce")
     df["Acceleration"] = pd.to_numeric(df["Acceleration"], errors="coerce")
     adf = adf.dropna(subset=["Acceleration", "dt"])
@@ -58,14 +60,15 @@ def acceleration(df):
 
     plt.figure()
     for (skier, session), g in adf.groupby(["SkierID", "SessionID"]):
-        plt.plot(g["Time"], g["speed"],
+        plt.plot(g["Time"], g["speed"], color="blue", marker=".",
                  label=f"{skier} Session {int(session)}")
+    plt.xlim([0, 30])
     plt.xlabel("Elapsed time in seconds")
     plt.ylabel("Speed (m/s)")
     plt.title("Speed over time for each session")
     # plt.legend()
     plt.grid(True)
-    # plt.show()
+    plt.show()
 
 
 def CO2(df):
@@ -75,7 +78,8 @@ def CO2(df):
     cdf = cdf.dropna(subset=["Level"])
 
     plt.figure()
-    plt.scatter(cdf["Time"], cdf["Level"], label="CO2 readings", color="red")
+    plt.scatter(cdf["Time"], cdf["Level"],
+                label="CO2 readings", color="red", marker=".")
     plt.axhline(y=1500, color="orange", linestyle="--",
                 label="Danger threshold")
     plt.xlabel("Time")
@@ -84,12 +88,9 @@ def CO2(df):
     plt.legend()
     plt.grid(True)
     plt.show()
-    # ^ should work, need to test with actual input
 
 
 def temp(df):
-
-    # maybe integrate temp and co2 together?
     tdf = df[df["Type"] == "TEMP"].copy()
 
     # same idea as before, removing rows with no level
@@ -104,8 +105,6 @@ def temp(df):
     plt.legend()
     plt.grid(True)
     plt.show()
-    # plt.show()
-    # ^ should work, need to test with actual input
 
 
 while True:
@@ -117,8 +116,7 @@ while True:
         print("File not found. Please try again.")
 
 while True:
-    print(clean(df))
-    print(df.columns)
+    df = clean(df)
     try:
         print("1. Acceleration")
         print("2. CO2 Levels")
