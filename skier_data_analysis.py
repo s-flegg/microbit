@@ -62,7 +62,6 @@ def acceleration(df):
     for (skier, session), g in adf.groupby(["SkierID", "SessionID"]):
         plt.plot(g["Time"], g["speed"], color="blue", marker=".",
                  label=f"{skier} Session {int(session)}")
-    plt.xlim([0, 30])
     plt.xlabel("Elapsed time in seconds")
     plt.ylabel("Speed (m/s)")
     plt.title("Speed over time for each session")
